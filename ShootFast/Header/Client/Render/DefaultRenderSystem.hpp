@@ -10,14 +10,14 @@ namespace ShootFast::Client::Render
 {
     struct ClientRenderContext;
 
-    class RenderSystem final
+    class DefaultRenderSystem final
     {
 
     public:
 
         static constexpr auto Name = "RenderSystem";
 
-        explicit RenderSystem(ClientRenderContext& context) : context(context) { }
+        explicit DefaultRenderSystem(ClientRenderContext& context) : context(context) { }
 
         void Run(Independent::ECS::World& world) const;
 

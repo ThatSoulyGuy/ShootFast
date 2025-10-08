@@ -38,12 +38,20 @@ endfunction()
 shoot_fast_add_executable(Client ${CLIENT_SOURCE_FILES} ${CLIENT_HEADER_FILES})
 shoot_fast_add_executable(Server ${SERVER_SOURCE_FILES} ${SERVER_HEADER_FILES})
 
+target_include_directories(Client PRIVATE "${FreeImage_SOURCE_DIR}/Source")
+
 if(APPLE)
     target_link_options(Client PRIVATE "-Wl,-framework,Cocoa" "-Wl,-framework,IOKit" "-Wl,-framework,CoreVideo")
 elseif(WIN32)
     target_link_libraries(Client PRIVATE opengl32)
 endif()
 
-target_link_libraries(Client PRIVATE glfw glad_global)
+target_link_libraries(Client PRIVATE glfw glad_global FreeImage::FreeImage)
 
+target_compile_definitions(Client PUBLIC SHOOTFAST_HAVE_FREEIMAGE)
 target_compile_definitions(Server PUBLIC IS_SERVER_FLAG)
+
+set(SOURCE_ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Assets")
+set(BUILD_ASSETS_DIR "${CMAKE_CURRENT_BINARY_DIR}/Assets")
+
+add_custom_command(TARGET Client POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_ASSETS_DIR} ${BUILD_ASSETS_DIR} COMMENT "Copying assets to build folder...")

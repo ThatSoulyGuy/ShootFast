@@ -1,7 +1,7 @@
 #ifndef SHOOTFAST_SHADER_HPP
 #define SHOOTFAST_SHADER_HPP
 
-#include <string>
+#include "Independent/Utility/AssetPath.hpp"
 
 namespace ShootFast::Client::Render
 {
@@ -15,8 +15,8 @@ namespace ShootFast::Client::Render
 
         using Handle = ShaderHandle;
 
-        std::string vertexSource;
-        std::string fragmentSource;
+        Independent::Utility::AssetPath vertexPath;
+        Independent::Utility::AssetPath fragmentPath;
 
         static Handle Create(const ClientRenderContext&, const Shader&);
         static void Destroy(const ClientRenderContext&, Handle);

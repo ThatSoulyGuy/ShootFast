@@ -73,4 +73,24 @@ function(init_dependencies)
         add_library(glad::glad ALIAS glad_global)
     endif()
 
+    set(FREEIMAGE_BUILD_WRAPPER OFF CACHE BOOL "" FORCE)
+
+    set(FREEIMAGE_BUILD_STATIC ON  CACHE BOOL "" FORCE)
+    set(FREEIMAGE_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(
+            FreeImage
+            GIT_REPOSITORY https://github.com/danoli3/FreeImage.git
+            GIT_TAG master
+    )
+
+    FetchContent_MakeAvailable(FreeImage)
+
+    if (TARGET FreeImage)
+        target_compile_definitions(FreeImage PUBLIC FREEIMAGE_LIB)
+    endif()
+
+    if(NOT TARGET FreeImage::FreeImage)
+        add_library(FreeImage::FreeImage ALIAS FreeImage)
+    endif()
 endfunction()

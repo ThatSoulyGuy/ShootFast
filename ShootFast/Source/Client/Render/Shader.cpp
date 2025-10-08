@@ -4,6 +4,9 @@
 #include "Client/Render/ClientRenderContext.hpp"
 #include "Client/Render/Handles.hpp"
 #include "Client/Render/Registries.hpp"
+#include "Independent/Utility/FileHelper.hpp"
+
+using namespace ShootFast::Independent::Utility;
 
 namespace
 {
@@ -76,7 +79,7 @@ namespace ShootFast::Client::Render
 {
     Shader::Handle Shader::Create(const ClientRenderContext& context, const Shader& shader)
     {
-        const GLuint program = Link(Compile(GL_VERTEX_SHADER, shader.vertexSource), Compile(GL_FRAGMENT_SHADER, shader.fragmentSource));
+        const GLuint program = Link(Compile(GL_VERTEX_SHADER, FileHelper::ReadFile(shader.vertexPath)), Compile(GL_FRAGMENT_SHADER, FileHelper::ReadFile(shader.fragmentPath)));
 
         return context.shaderRegistry->Create(program);
     }

@@ -8,7 +8,7 @@
 #include "Client/Render/Mesh.hpp"
 #include "Client/Render/RenderComponents.hpp"
 #include "Client/Render/RenderMesh.hpp"
-#include "Client/Render/RenderSystem.hpp"
+#include "Client/Render/DefaultRenderSystem.hpp"
 #include "Client/Render/Shader.hpp"
 #include "Client/Render/Texture2d.hpp"
 #include "Client/Render/Vertices/VertexDefault.hpp"
@@ -20,6 +20,7 @@ using namespace ShootFast::Client::Render::Vertices;
 using namespace ShootFast::Client::Render;
 using namespace ShootFast::Client::Network;
 using namespace ShootFast::Independent::Math;
+using namespace ShootFast::Independent::Utility;
 
 namespace ShootFast::Client
 {
@@ -83,43 +84,25 @@ namespace ShootFast::Client
     {
         Window::Clear();
 
-        RenderSystem{ renderContext }.Run(world);
+        DefaultRenderSystem{ renderContext }.Run(world);
 
         Window::GetInstance().Present();
     }
 
     void ClientApplication::BuildTestResources()
     {
-        const std::string vertexSource = R"(#version 410 core
-            layout(location=0) in vec3 inPosition;
-            uniform mat4 uModel;
-            void main(){ gl_Position = uModel * vec4(inPosition,1.0); })";
-
-        const std::string fragmentSource = R"(#version 410 core
-            out vec4 FragColor;
-            uniform sampler2D uAlbedo;
-            void main(){ FragColor = texture(uAlbedo, vec2(0.5)); })";
-
-        const Shader shaderSpecification{ vertexSource, fragmentSource };
+        const Shader shaderSpecification{ AssetPath{ "ShootFast", "Shader/Default.vert" }, AssetPath{ "ShootFast", "Shader/Default.frag" } };
         testShader = RenderComponents<Shader>::Create(renderContext, shaderSpecification);
 
-        Texture2d textureSpecification{};
-
-        textureSpecification.width = 2;
-        textureSpecification.height = 2;
-        textureSpecification.format = TextureFormat::RGBA8;
-        textureSpecification.generateMips = true;
-        textureSpecification.pixels = { 255,0,0,255,  0,255,0,255,  0,0,255,255,  255,255,255,255 };
-
-        testTexture = RenderComponents<Texture2d>::Upload(renderContext, textureSpecification);
+        testTexture = RenderComponents<Texture2d>::Upload(renderContext, Texture2d::LoadFromFileUsingFreeImage({ "ShootFast", "Texture/Test.png" }, false, true, true, true));
 
         Mesh<VertexDefault> meshSpecification{};
 
         meshSpecification.vertices =
         {
-            VertexDefault{ .position={ -0.5f, -0.5f, 0.0f }, .color={ 1.0f, 0.0f, 0.0f }, .normal={}, .uvs={ 0.0f, 0.0f } },
+            VertexDefault{ .position={ -0.5f, -0.5f, 0.0f }, .color={ 1.0f, 0.0f, 0.0f }, .normal={}, .uvs={ 0.0f, 1.0f } },
             VertexDefault{ .position={  0.5f, -0.5f, 0.0f }, .color={ 0.0f, 1.0f, 0.0f }, .normal={}, .uvs={ 1.0f, 1.0f } },
-            VertexDefault{ .position={  0.0f,  0.5f, 0.0f }, .color={ 0.0f, 0.0f, 1.0f }, .normal={}, .uvs={ 1.0f, 1.0f } }
+            VertexDefault{ .position={  0.0f,  0.5f, 0.0f }, .color={ 0.0f, 0.0f, 1.0f }, .normal={}, .uvs={ 1.0f, 0.0f } }
         };
 
         meshSpecification.indices = { 0, 1, 2 };
@@ -135,7 +118,7 @@ namespace ShootFast::Client
 
         world.Add<Transform>(testEntity, Transform{ .position = { 0.0f, 0.0f, 0.0f }, .rotation = {  }, .scale = { 1.0f, 1.0f, 1.0f } });
         world.Add<LocalToWorld>(testEntity, LocalToWorld{});
-        world.Add<RenderMesh>(testEntity, RenderMesh{ testMesh, testMaterial });
+        world.Add<RenderMesh<VertexDefault>>(testEntity, RenderMesh<VertexDefault>{ testMesh, testMaterial });
     }
 
     ClientApplication& ClientApplication::GetInstance()
@@ -151,7 +134,7 @@ int main(int, char**)
     ShootFast::Client::ClientApplication::GetInstance().Preinitialize();
     ShootFast::Client::ClientApplication::GetInstance().Initialize();
 
-    while (ShootFast::Client::ClientApplication::GetInstance().IsRunning())
+    while (ShootFast::Client::ClientApplication::IsRunning())
     {
         ShootFast::Client::ClientApplication::GetInstance().Update();
         ShootFast::Client::ClientApplication::GetInstance().Render();

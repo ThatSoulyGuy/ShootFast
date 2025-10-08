@@ -2,7 +2,13 @@
 #define SHOOTFAST_TEXTURE2D_HPP
 
 #include <cstdint>
+#include <string>
 #include <vector>
+
+namespace ShootFast::Independent::Utility
+{
+    class AssetPath;
+}
 
 namespace ShootFast::Client::Render
 {
@@ -32,6 +38,9 @@ namespace ShootFast::Client::Render
 
         static Handle Upload(const ClientRenderContext&, const Texture2d&);
         static void Destroy(const ClientRenderContext&, Handle);
+
+        static Texture2d LoadFromFileUsingFreeImage(const Independent::Utility::AssetPath& filePath, bool forceRgba, bool flipVertical, bool generateMips, bool sRgb);
+        static Handle LoadAndUploadUsingFreeImage(const ClientRenderContext& context, const Independent::Utility::AssetPath& filePath, bool forceRgba, bool flipVertical, bool generateMips, bool sRgb);
     };
 }
 
