@@ -1,6 +1,6 @@
 #include "Client/Render/Texture2d.hpp"
 #include <stdexcept>
-#include <glad/gl.h>
+#include <glad.h>
 #ifdef SHOOTFAST_HAVE_FREEIMAGE
 #include <FreeImage.h>
 #endif
