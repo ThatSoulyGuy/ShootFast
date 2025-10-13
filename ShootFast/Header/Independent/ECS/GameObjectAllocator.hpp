@@ -18,6 +18,7 @@ namespace ShootFast::Independent::ECS
 
         uint32_t nextId{1u};
         std::vector<uint32_t> freeList;
+        std::vector<bool> allocated{false};
 
     };
 }
