@@ -48,7 +48,7 @@ namespace ShootFast::Client
 
     void ClientApplication::Preinitialize()
     {
-        Window::GetInstance().Initialize("ShootFast* 1.8.4", { WINDOW_WIDTH, WINDOW_HEIGHT });
+        Window::GetInstance().Initialize("ShootFast* 1.8.5", { WINDOW_WIDTH, WINDOW_HEIGHT });
 
         InputManager::GetInstance().Initialize();
 

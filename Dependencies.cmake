@@ -56,12 +56,12 @@ function(init_dependencies)
     FetchContent_Declare(
             glad2
             GIT_REPOSITORY https://github.com/Dav1dde/glad.git
-            GIT_TAG v2.0.8
+            GIT_TAG v2.0.4
     )
 
     FetchContent_MakeAvailable(glad2)
 
-    include(${glad2_SOURCE_DIR}/cmake/GladConfig.cmake)
+    include(${glad2_SOURCE_DIR}/cmake/CMakeLists.txt)
 
     glad_add_library(glad_global STATIC
             REPRODUCIBLE
