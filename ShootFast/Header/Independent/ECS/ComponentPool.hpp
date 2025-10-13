@@ -5,6 +5,7 @@
 #include <vector>
 #include <limits>
 #include <stdexcept>
+#include <utility>
 
 namespace ShootFast::Independent::ECS
 {
@@ -16,20 +17,21 @@ namespace ShootFast::Independent::ECS
 
         using ValueType = T;
 
-        T& Emplace(const uint32_t gameObject, const T& value)
+        template <typename... Args>
+        T& Emplace(const uint32_t gameObject, Args&&... args)
         {
             if (gameObject >= sparseList.size())
                 sparseList.resize(static_cast<std::size_t>(gameObject) + 1u, NoPosition);
 
             if (sparseList[gameObject] != NoPosition)
             {
-                denseList[sparseList[gameObject]] = value;
+                denseList[sparseList[gameObject]] = T(std::forward<Args>(args)...);
                 return denseList[sparseList[gameObject]];
             }
 
             const std::size_t index = denseList.size();
 
-            denseList.push_back(value);
+            denseList.emplace_back(std::forward<Args>(args)...);
             ownerList.push_back(gameObject);
             sparseList[gameObject] = index;
 

@@ -2,8 +2,9 @@
 #define SHOOTFAST_WORLD_HPP
 
 #include <cstdint>
-#include <functional>
-#include <ranges>
+#include <memory>
+#include <tuple>
+#include <utility>
 #include <typeindex>
 #include <unordered_map>
 #include <vector>
@@ -28,8 +29,8 @@ namespace ShootFast::Independent::ECS
 
         void DestroyGameObject(uint32_t gameObject);
 
-        template <typename T>
-        T& Add(uint32_t gameObject, const T& value);
+        template <typename T, typename... Args>
+        T& Add(uint32_t gameObject, Args&&... args);
 
         template <typename T>
         bool Has(uint32_t gameObject) const;
@@ -98,23 +99,32 @@ namespace ShootFast::Independent::ECS
 
     private:
 
+        struct PoolConcept
+        {
+            virtual ~PoolConcept() = default;
+            virtual void Remove(uint32_t gameObject) = 0;
+        };
+
+        template <typename T>
+        struct PoolModel final : PoolConcept
+        {
+            ComponentPool<T> pool;
+
+            void Remove(uint32_t gameObject) override
+            {
+                pool.Remove(gameObject);
+            }
+        };
+
         template <typename T>
         ComponentPool<T>& GetPool();
 
         template <typename T>
         ComponentPool<T>* GetPoolPointer();
 
-        template <typename Head>
-        ComponentPool<Head>* SelectSmallestPool();
+        mutable std::unique_ptr<GameObjectAllocator> allocator;
 
-        template <typename Head, typename Next, typename... Rest>
-        ComponentPool<Head>* SelectSmallestPool();
-
-        GameObjectAllocator* allocator = nullptr;
-
-        std::unordered_map<std::type_index, void*> poolMap;
-        std::unordered_map<std::type_index, std::function<void(void*)>> destructorMap;
-        std::unordered_map<std::type_index, std::function<void(uint32_t)>> eraserMap;
+        std::unordered_map<std::type_index, std::unique_ptr<PoolConcept>> poolMap;
     };
 }
 

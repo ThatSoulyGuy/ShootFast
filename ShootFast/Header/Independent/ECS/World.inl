@@ -5,12 +5,12 @@
 
 namespace ShootFast::Independent::ECS
 {
-    template <typename T>
-    T& World::Add(uint32_t gameObject, const T& value)
+    template <typename T, typename... Args>
+    T& World::Add(uint32_t gameObject, Args&&... args)
     {
         auto& pool = GetPool<T>();
 
-        return pool.Emplace(gameObject, value);
+        return pool.Emplace(gameObject, std::forward<Args>(args)...);
     }
 
     template <typename T>
@@ -21,7 +21,9 @@ namespace ShootFast::Independent::ECS
         if (iterator == poolMap.end())
             return false;
 
-        return static_cast<ComponentPool<T>*>(iterator->second)->Has(gameObject);
+        const auto* model = static_cast<PoolModel<T>*>(iterator->second.get());
+
+        return model->pool.Has(gameObject);
     }
 
     template <typename T>
@@ -50,6 +52,13 @@ namespace ShootFast::Independent::ECS
         };
 
         (pick(GetPoolPointer<T>()), ...);
+
+        if (result == nullptr)
+        {
+            static const std::vector<uint32_t> EmptyOwners{};
+
+            result = &EmptyOwners;
+        }
 
         return ViewRange<T...>(this, result);
     }
@@ -84,24 +93,15 @@ namespace ShootFast::Independent::ECS
 
         if (iterator == poolMap.end())
         {
-            auto* created = new ComponentPool<T>();
+            auto model = std::make_unique<PoolModel<T>>();
+            auto* created = &model->pool;
 
-            poolMap.emplace(key, created);
-
-            destructorMap.emplace(key, [](void* pointer)
-            {
-                delete static_cast<ComponentPool<T>*>(pointer);
-            });
-
-            eraserMap.emplace(key, [created](uint32_t gameObject)
-            {
-                created->Remove(gameObject);
-            });
+            poolMap.emplace(key, std::move(model));
 
             return *created;
         }
 
-        return *static_cast<ComponentPool<T>*>(iterator->second);
+        return static_cast<PoolModel<T>*>(iterator->second.get())->pool;
     }
 
     template <typename T>
