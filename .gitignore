@@ -1,4 +1,5 @@
 cmake-build-debug
+cmake-build-debug*
 bin
 .idea
 *.DS_Store
