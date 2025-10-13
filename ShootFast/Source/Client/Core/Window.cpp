@@ -1,7 +1,6 @@
 #include "Client/Core/Window.hpp"
 #include <stdexcept>
-
-#include "../../../../cmake-build-debug-event-trace/_deps/glfw-src/src/internal.h"
+#include <glad/gl.h>
 
 namespace ShootFast::Client::Core
 {
@@ -33,7 +32,7 @@ namespace ShootFast::Client::Core
 
         glfwMakeContextCurrent(handle);
 
-        if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+        if (!gladLoadGL(glfwGetProcAddress))
             throw std::runtime_error("Failed to initialize GLAD!");
 
         glfwSetFramebufferSizeCallback(handle, [](GLFWwindow*, const int width, const int height)

@@ -1,7 +1,13 @@
 #include "Client/ClientApplication.hpp"
 #include <iostream>
 #include <print>
+
+#include "Client/Core/InputManager.hpp"
 #include "Client/Core/Window.hpp"
+#include "Client/Entity/PlayerFactory.hpp"
+#include "Client/Entity/Systems/CameraFollowSystem.hpp"
+#include "Client/Entity/Systems/CharacterMotorSystem.hpp"
+#include "Client/Entity/Systems/PlayerInputSystem.hpp"
 #include "Client/Network/ClientNetwork.hpp"
 #include "Client/Render/Handles.hpp"
 #include "Client/Render/Material.hpp"
@@ -16,6 +22,8 @@
 #include "Independent/Math/TransformSystem.hpp"
 
 using namespace ShootFast::Client::Core;
+using namespace ShootFast::Client::Entity::Systems;
+using namespace ShootFast::Client::Entity;
 using namespace ShootFast::Client::Render::Vertices;
 using namespace ShootFast::Client::Render;
 using namespace ShootFast::Client::Network;
@@ -42,6 +50,8 @@ namespace ShootFast::Client
     {
         Window::GetInstance().Initialize("ShootFast* 1.8.4", { WINDOW_WIDTH, WINDOW_HEIGHT });
 
+        InputManager::GetInstance().Initialize();
+
         ClientNetwork::GetInstance().OnConnected.emplace_back([]
         {
             std::print(std::cout, "Successfully connected to the server.\n");
@@ -64,6 +74,10 @@ namespace ShootFast::Client
     {
         BuildTestResources();
         CreateTestEntity();
+
+        auto [playerHandle, cameraHandle] = PlayerFactory::CreateLocalPlayer(world, { 0.0f, 0.0f, 0.0f });
+
+        renderContext.cameraHandle = cameraHandle;
     }
 
     bool ClientApplication::IsRunning()
@@ -75,7 +89,17 @@ namespace ShootFast::Client
     {
         ClientNetwork::GetInstance().Poll(1);
 
-        TransformSystem{}.Run(world);
+        PlayerInputSystem::Run(world);
+
+        const CharacterMotorSystem motorSystem(1.0f / 60.0f);
+        motorSystem.Run(world);
+
+        CameraFollowSystem cameraFollow;
+        cameraFollow.Run(world);
+
+        TransformSystem::Run(world);
+
+        InputManager::GetInstance().Update();
 
         frameIndex += 1;
     }
@@ -116,8 +140,7 @@ namespace ShootFast::Client
     {
         testEntity = world.CreateGameObject();
 
-        world.Add<Transform>(testEntity, Transform{ .position = { 0.0f, 0.0f, 0.0f }, .rotation = {  }, .scale = { 1.0f, 1.0f, 1.0f } });
-        world.Add<LocalToWorld>(testEntity, LocalToWorld{});
+        world.Add<Transform>(testEntity, Transform{ .position = { 0.0f, 0.0f, -2.0f }, .rotation = {  }, .scale = { 1.0f, 1.0f, 1.0f } });
         world.Add<RenderMesh<VertexDefault>>(testEntity, RenderMesh<VertexDefault>{ testMesh, testMaterial });
     }
 

@@ -1,6 +1,8 @@
 #include "Independent/Math/TransformSystem.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
+
+#include "Independent/ECS/Hierarchy.hpp"
 #include "Independent/ECS/World.hpp"
 #include "Independent/Math/Transform.hpp"
 
@@ -17,9 +19,39 @@ namespace ShootFast::Independent::Math
         return T * R * S;
     }
 
-    void TransformSystem::Run(World& world) const
+    static void ComposeSubtree(World& world, const uint32_t node, const glm::mat4& parentL2W)
     {
-        for (auto [gameObject, transform, localToWorld] : world.View<Transform, LocalToWorld>())
-            localToWorld.matrix = MakeLocalMatrix(transform);
+        auto& transform  = world.Get<Transform>(node);
+
+        transform.matrix = parentL2W * MakeLocalMatrix(transform);
+
+        if (world.Has<Children>(node))
+        {
+            for (const uint32_t child : world.Get<Children>(node).value)
+            {
+                if (world.Has<Transform>(child))
+                    ComposeSubtree(world, child, transform.matrix);
+            }
+        }
+    }
+
+    void TransformSystem::Run(World& world)
+    {
+        for (auto [gameObject, transform] : world.View<Transform>())
+        {
+            if (!world.Has<Parent>(gameObject))
+            {
+                transform.matrix = MakeLocalMatrix(transform);
+
+                if (world.Has<Children>(gameObject))
+                {
+                    for (const uint32_t child : world.Get<Children>(gameObject).value)
+                    {
+                        if (world.Has<Transform>(child))
+                            ComposeSubtree(world, child, transform.matrix);
+                    }
+                }
+            }
+        }
     }
 }

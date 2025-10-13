@@ -1,8 +1,11 @@
 #include "Server/ServerApplication.hpp"
 #include <iostream>
 #include <print>
+
+#include "Independent/Math/TransformSystem.hpp"
 #include "Server/Network/ServerNetwork.hpp"
 
+using namespace ShootFast::Independent::Math;
 using namespace ShootFast::Server::Network;
 
 namespace ShootFast::Server
@@ -48,6 +51,8 @@ namespace ShootFast::Server
     void ServerApplication::Update()
     {
         ServerNetwork::GetInstance().Poll(1);
+
+        TransformSystem{}.Run(world);
     }
 
     ServerApplication& ServerApplication::GetInstance()

@@ -1,5 +1,7 @@
 #include "Client/Render/DefaultRenderSystem.hpp"
 #include <glm/gtc/type_ptr.hpp>
+#include "Client/Core/Window.hpp"
+#include "Client/Render/Camera.hpp"
 #include "Client/Render/ClientRenderContext.hpp"
 #include "Client/Render/Registries.hpp"
 #include "Client/Render/RenderMesh.hpp"
@@ -9,9 +11,15 @@
 
 namespace ShootFast::Client::Render
 {
-    static void BindStandardUniforms(const ShaderProgram& prog, const glm::mat4& model)
+    static void BindStandardUniforms(const ShaderProgram& program, const glm::mat4& projection, const glm::mat4& view, const glm::mat4& model)
     {
-        if (const GLint location = glGetUniformLocation(prog.programId, "modelMatrix"); location >= 0)
+        if (const GLint location = glGetUniformLocation(program.programId, "projectionMatrix"); location >= 0)
+            glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projection));
+
+        if (const GLint location = glGetUniformLocation(program.programId, "viewMatrix"); location >= 0)
+            glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
+
+        if (const GLint location = glGetUniformLocation(program.programId, "modelMatrix"); location >= 0)
             glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
     }
 
@@ -22,7 +30,13 @@ namespace ShootFast::Client::Render
         auto& shaderRegistry = *context.shaderRegistry;
         auto& textureRegistry = *context.textureRegistry;
 
-        for (auto [gameObject, localToWorld, renderMesh] : world.View<Independent::Math::LocalToWorld, RenderMesh<Vertices::VertexDefault>>())
+        const auto& cameraComponent = world.Get<Camera>(context.cameraHandle);
+        const auto& cameraTransform = world.Get<Independent::Math::Transform>(context.cameraHandle);
+
+        const float aspectRatio = static_cast<float>(Core::Window::GetInstance().GetDimensions().x) / Core::Window::GetInstance().GetDimensions().y;
+        const auto projection = glm::perspective(glm::radians(cameraComponent.fovDegrees), aspectRatio, cameraComponent.nearPlane, cameraComponent.farPlane);
+
+        for (auto [gameObject, localToWorld, renderMesh] : world.View<Independent::Math::Transform, RenderMesh<Vertices::VertexDefault>>())
         {
             if (!renderMesh.mesh || !renderMesh.material)
                 continue;
@@ -34,7 +48,7 @@ namespace ShootFast::Client::Render
 
             glUseProgram(shaderProgram.programId);
 
-            BindStandardUniforms(shaderProgram, localToWorld.matrix);
+            BindStandardUniforms(shaderProgram, projection, glm::inverse(cameraTransform.matrix), localToWorld.matrix);
 
             if (albedo)
             {

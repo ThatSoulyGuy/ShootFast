@@ -1,6 +1,8 @@
 #ifndef SHOOTFAST_SERVER_APPLICATION_HPP
 #define SHOOTFAST_SERVER_APPLICATION_HPP
 
+#include "Independent/ECS/World.hpp"
+
 namespace ShootFast::Server
 {
     class ServerApplication final
@@ -28,6 +30,8 @@ namespace ShootFast::Server
     private:
 
         ServerApplication() = default;
+
+        Independent::ECS::World world;
         
     };
 }

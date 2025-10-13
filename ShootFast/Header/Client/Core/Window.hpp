@@ -3,7 +3,8 @@
 
 #include <string>
 #include <glm/vec2.hpp>
-#include "Client/Utility/GLFW.hpp"
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
 
 namespace ShootFast::Client::Core
 {

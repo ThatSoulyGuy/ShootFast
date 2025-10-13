@@ -15,7 +15,7 @@ namespace ShootFast::Independent::Math
 
         static constexpr auto Name = "TransformSystem";
 
-        void Run(ECS::World& world) const;
+        static void Run(ECS::World& world);
     };
 }
 

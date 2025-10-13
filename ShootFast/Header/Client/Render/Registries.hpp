@@ -2,7 +2,7 @@
 #define SHOOTFAST_REGISTRIES_HPP
 
 #include <vector>
-#include "Client/Utility/GLFW.hpp"
+#include <glad/gl.h>
 
 namespace ShootFast::Client::Render
 {

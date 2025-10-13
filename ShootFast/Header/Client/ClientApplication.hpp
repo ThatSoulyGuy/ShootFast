@@ -3,6 +3,7 @@
 
 #include "Independent/ECS/GameObject.hpp"
 #include "Independent/ECS/World.hpp"
+#include "Render/Camera.hpp"
 #include "Render/ClientRenderContext.hpp"
 #include "Render/Handles.hpp"
 #include "Render/Registries.hpp"

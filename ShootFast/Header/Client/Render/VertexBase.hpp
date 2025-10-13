@@ -2,7 +2,7 @@
 #define SHOOTFAST_VERTEX_HPP
 
 #include <cstddef>
-#include "Client/Utility/GLFW.hpp"
+#include <glad/gl.h>
 
 namespace ShootFast::Client::Render
 {

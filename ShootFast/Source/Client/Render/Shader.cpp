@@ -1,6 +1,6 @@
 #include "Client/Render/Shader.hpp"
 #include <stdexcept>
-#include <glad.h>
+#include <glad/gl.h>
 #include "Client/Render/ClientRenderContext.hpp"
 #include "Client/Render/Handles.hpp"
 #include "Client/Render/Registries.hpp"
