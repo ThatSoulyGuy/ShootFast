@@ -16,7 +16,7 @@ namespace ShootFast::Client::Entity
         std::uint32_t player{};
         std::uint32_t camera{};
 
-        static PlayerFactory CreateLocalPlayer(Independent::ECS::World& world, const glm::vec3& startPosition);
+        static PlayerFactory CreateLocalPlayer(Independent::ECS::World& world, bool isRemote, const glm::vec3& startPosition);
     };
 }
 

@@ -1,6 +1,8 @@
 #include "Server/Network/ServerNetwork.hpp"
 
+#include <iostream>
 #include <optional>
+#include <ranges>
 #include <stdexcept>
 
 #ifdef ENET_FEATURE_IPV6
@@ -162,7 +164,20 @@ namespace ShootFast::Server::Network
                     for (const auto& function : OnPacketReceived)
                     {
                         if (function)
-                            function(*maybeId, payload);
+                        {
+                            try
+                            {
+                                function(*maybeId, CommonNetwork::PeekType(payload), SerializationBuffer(payload.begin() + 1, payload.end()));
+                            }
+                            catch (std::exception& exception)
+                            {
+                                std::cerr << "Server packet error: " << exception.what() << "\n";
+                            }
+                            catch (...)
+                            {
+                                std::cerr << "Unknown server packet error!\n";
+                            }
+                        }
                     }
                 }
 
@@ -186,22 +201,46 @@ namespace ShootFast::Server::Network
         enet_host_flush(host);
     }
 
-    void ServerNetwork::Broadcast(const SerializationBuffer& buffer, const PacketReliability reliability, const uint8_t channel) const
+    void ServerNetwork::Broadcast(const SerializationBuffer& buffer, const MessageType type, const PacketReliability reliability, const uint8_t channel) const
     {
         if (host == nullptr)
             return;
 
-        enet_host_broadcast(host, channel, MakePacket(buffer, reliability));
+        SerializationBuffer bufferOut;
+
+        CommonNetwork::WriteU8(bufferOut, static_cast<std::uint8_t>(type));
+        bufferOut.append(buffer);
+
+        enet_host_broadcast(host, channel, MakePacket(bufferOut, reliability));
     }
 
-    void ServerNetwork::SendTo(const NetworkId id, const SerializationBuffer& buffer, const PacketReliability reliability, const uint8_t channel)
+    void ServerNetwork::BroadcastExcluding(const SerializationBuffer& buffer, const MessageType type, const PacketReliability reliability, const NetworkId excludee, const uint8_t channel)
+    {
+        if (host == nullptr)
+            return;
+
+        for (const auto& client: clients | std::views::keys)
+        {
+            if (client == excludee)
+                continue;
+
+            SendTo(client, buffer, type, reliability, channel);
+        }
+    }
+
+    void ServerNetwork::SendTo(const NetworkId id, const SerializationBuffer& buffer, const MessageType type, const PacketReliability reliability, const uint8_t channel)
     {
         const auto iterator = clients.find(id);
 
         if (iterator == clients.end())
             return;
 
-        enet_peer_send(iterator->second.peer, channel, MakePacket(buffer, reliability));
+        SerializationBuffer bufferOut;
+
+        CommonNetwork::WriteU8(bufferOut, static_cast<std::uint8_t>(type));
+        bufferOut.append(buffer);
+
+        enet_peer_send(iterator->second.peer, channel, MakePacket(bufferOut, reliability));
     }
 
     ServerNetwork& ServerNetwork::GetInstance()

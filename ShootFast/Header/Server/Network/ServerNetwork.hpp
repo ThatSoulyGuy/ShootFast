@@ -33,12 +33,13 @@ namespace ShootFast::Server::Network
             return host != nullptr;
         }
 
-        void Broadcast(const Independent::Network::SerializationBuffer& buffer, Independent::Network::PacketReliability reliability, uint8_t channel = 0) const;
-        void SendTo(Independent::Network::NetworkId id, const Independent::Network::SerializationBuffer& buffer, Independent::Network::PacketReliability reliability, uint8_t channel = 0);
+        void Broadcast(const Independent::Network::SerializationBuffer& buffer, Independent::Network::MessageType type, Independent::Network::PacketReliability reliability, uint8_t channel = 0) const;
+        void BroadcastExcluding(const Independent::Network::SerializationBuffer& buffer, Independent::Network::MessageType type, Independent::Network::PacketReliability reliability, Independent::Network::NetworkId excludee, uint8_t channel = 0);
+        void SendTo(Independent::Network::NetworkId id, const Independent::Network::SerializationBuffer& buffer, Independent::Network::MessageType type, Independent::Network::PacketReliability reliability, uint8_t channel = 0);
 
         std::vector<std::function<void(Independent::Network::NetworkId)>> OnClientConnected;
         std::vector<std::function<void(Independent::Network::NetworkId)>> OnClientDisconnected;
-        std::vector<std::function<void(Independent::Network::NetworkId, const Independent::Network::SerializationBuffer&)>> OnPacketReceived;
+        std::vector<std::function<void(Independent::Network::NetworkId, Independent::Network::MessageType, const Independent::Network::SerializationBuffer&)>> OnPacketReceived;
         std::vector<std::function<void(Independent::Network::NetworkId)>> OnClientTimeout;
 
         static ServerNetwork& GetInstance();

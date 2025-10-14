@@ -1,5 +1,7 @@
 #include "Client/Network/ClientNetwork.hpp"
 
+#include <iostream>
+
 using namespace ShootFast::Independent::Network;
 
 namespace ShootFast::Client::Network
@@ -178,7 +180,20 @@ namespace ShootFast::Client::Network
                 for (const auto& function : OnPacketReceived)
                 {
                     if (function)
-                        function(payload);
+                    {
+                        try
+                        {
+                            function(CommonNetwork::PeekType(payload), SerializationBuffer(payload.begin() + 1, payload.end()));
+                        }
+                        catch (std::exception& exception)
+                        {
+                            std::cerr << "Client packet error: " << exception.what() << "\n";
+                        }
+                        catch (...)
+                        {
+                            std::cerr << "Unknown client packet error!\n";
+                        }
+                    }
                 }
 
                 enet_packet_destroy(event.packet);
@@ -198,12 +213,17 @@ namespace ShootFast::Client::Network
         enet_host_flush(host);
     }
 
-    void ClientNetwork::Send(const SerializationBuffer& buffer, const PacketReliability reliability, const uint8_t channel) const
+    void ClientNetwork::Send(const SerializationBuffer& buffer, const MessageType type, const PacketReliability reliability, const uint8_t channel) const
     {
         if (peer == nullptr)
             return;
 
-        enet_peer_send(peer, channel, MakePacket(buffer, reliability));
+        SerializationBuffer bufferOut;
+
+        CommonNetwork::WriteU8(bufferOut, static_cast<std::uint8_t>(type));
+        bufferOut.append(buffer);
+
+        enet_peer_send(peer, channel, MakePacket(bufferOut, reliability));
     }
 
     ClientNetwork& ClientNetwork::GetInstance()

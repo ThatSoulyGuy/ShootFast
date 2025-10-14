@@ -1,7 +1,6 @@
 #include "Client/ClientApplication.hpp"
 #include <iostream>
 #include <print>
-
 #include "Client/Core/InputManager.hpp"
 #include "Client/Core/Window.hpp"
 #include "Client/Entity/PlayerFactory.hpp"
@@ -20,6 +19,7 @@
 #include "Client/Render/Vertices/VertexDefault.hpp"
 #include "Independent/Math/Transform.hpp"
 #include "Independent/Math/TransformSystem.hpp"
+#include "Independent/Network/Packet.hpp"
 
 using namespace ShootFast::Client::Core;
 using namespace ShootFast::Client::Entity::Systems;
@@ -28,6 +28,7 @@ using namespace ShootFast::Client::Render::Vertices;
 using namespace ShootFast::Client::Render;
 using namespace ShootFast::Client::Network;
 using namespace ShootFast::Independent::Math;
+using namespace ShootFast::Independent::Network;
 using namespace ShootFast::Independent::Utility;
 
 namespace ShootFast::Client
@@ -67,6 +68,73 @@ namespace ShootFast::Client
             std::print(std::cout, "Successfully disconnected from server.\n");
         });
 
+        ClientNetwork::GetInstance().OnPacketReceived.emplace_back([this](const MessageType type, const SerializationBuffer& payload)
+        {
+            if (type == MessageType::S2C_GameObjectPose)
+            {
+                S2C_GameObjectPose message;
+
+                message.Deserialize(payload);
+
+                for (const auto& [gameObject, transform, replication] : world.View<Transform, Replication>())
+                {
+                    if (replication.id != message.handle)
+                        continue;
+
+                    transform.position = message.position;
+                    transform.rotation = glm::quat(glm::vec3(message.rotation.x, message.rotation.y, 0.0f));
+
+                    break;
+                }
+            }
+        });
+
+        ClientNetwork::GetInstance().OnPacketReceived.emplace_back([this](const MessageType type, const SerializationBuffer& payload)
+        {
+            if (type == MessageType::S2C_AssignSelf)
+            {
+                S2C_AssignSelf message{};
+                message.Deserialize(payload);
+
+                if (world.Has<Transform>(localPlayerGO))
+                    world.Get<Transform>(localPlayerGO).position = message.position;
+
+                handleToGameObject[message.handle] = localPlayerGO;
+
+                if (world.Has<Replication>(localPlayerGO))
+                    world.Get<Replication>(localPlayerGO).id = message.handle;
+
+                transformSynchronizationSystem.AddObject(localPlayerGO);
+            }
+        });
+
+        ClientNetwork::GetInstance().OnPacketReceived.emplace_back([this](const MessageType type, const SerializationBuffer& payload)
+        {
+            if (type == MessageType::S2C_Spawn)
+            {
+                S2C_Spawn message{};
+
+                message.Deserialize(payload);
+
+                Independent::ECS::GameObject gameObject = 0;
+
+                if (const auto iterator = handleToGameObject.find(message.handle); iterator != handleToGameObject.end())
+                    gameObject = iterator->second;
+                else
+                {
+                    auto [remoteHandle, cameraHandle] = PlayerFactory::CreateLocalPlayer(world, true, message.position);
+                    gameObject = remoteHandle;
+
+                    world.Add<Replication>(gameObject, Replication{ .id = message.handle, .ownedByLocal = false });
+
+                    handleToGameObject[message.handle] = gameObject;
+                }
+
+                if (world.Has<Transform>(gameObject))
+                    world.Get<Transform>(gameObject).position = message.position;
+            }
+        });
+
         ClientNetwork::GetInstance().Connect("127.0.0.1", CONNECTION_PORT);
     }
 
@@ -75,9 +143,13 @@ namespace ShootFast::Client
         BuildTestResources();
         CreateTestEntity();
 
-        auto [playerHandle, cameraHandle] = PlayerFactory::CreateLocalPlayer(world, { 0.0f, 0.0f, 0.0f });
+        auto [playerHandle, cameraHandle] = PlayerFactory::CreateLocalPlayer(world, false, { 0.0f, 0.0f, 0.0f });
 
         renderContext.cameraHandle = cameraHandle;
+
+        localPlayerGO = playerHandle;
+
+        world.Add<Replication>(playerHandle, Replication{ .id = kInvalidReplicationHandle, .ownedByLocal = true });
     }
 
     bool ClientApplication::IsRunning()
@@ -94,10 +166,10 @@ namespace ShootFast::Client
         const CharacterMotorSystem motorSystem(1.0f / 60.0f);
         motorSystem.Run(world);
 
-        CameraFollowSystem cameraFollow;
-        cameraFollow.Run(world);
-
+        CameraFollowSystem::Run(world);
         TransformSystem::Run(world);
+
+        transformSynchronizationSystem.Run(world, 1.0f / 60.0f);
 
         InputManager::GetInstance().Update();
 

@@ -1,7 +1,9 @@
 #ifndef SHOOTFAST_SERVER_APPLICATION_HPP
 #define SHOOTFAST_SERVER_APPLICATION_HPP
 
+#include "Independent/ECS/GameObject.hpp"
 #include "Independent/ECS/World.hpp"
+#include "Independent/Network/CommonNetwork.hpp"
 
 namespace ShootFast::Server
 {
@@ -30,6 +32,8 @@ namespace ShootFast::Server
     private:
 
         ServerApplication() = default;
+
+        std::unordered_map<Independent::Network::NetworkId, Independent::ECS::GameObject> playerByNetId;
 
         Independent::ECS::World world;
         

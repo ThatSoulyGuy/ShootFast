@@ -55,7 +55,7 @@ namespace ShootFast::Independent::ECS
 
         if (result == nullptr)
         {
-            static const std::vector<uint32_t> EmptyOwners{};
+            static constexpr std::vector<uint32_t> EmptyOwners{};
 
             result = &EmptyOwners;
         }

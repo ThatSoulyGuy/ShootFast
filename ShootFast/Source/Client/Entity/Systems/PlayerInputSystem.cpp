@@ -4,6 +4,7 @@
 #include "Client/Core/InputManager.hpp"
 #include "Client/Entity/PlayerInput.hpp"
 #include "Independent/ECS/World.hpp"
+#include "Independent/Network/CommonNetwork.hpp"
 
 using namespace ShootFast::Client::Core;
 using namespace ShootFast::Independent::ECS;
@@ -40,6 +41,9 @@ namespace ShootFast::Client::Entity::Systems
 
         for (auto [gameObject, input] : world.View<PlayerInput>())
         {
+            if (world.Has<Independent::Network::Remote>(gameObject))
+                return;
+
             input.moveAxis = axis;
             input.run = run;
         }

@@ -2,6 +2,7 @@
 #define SHOOTFAST_COMMON_NETWORK_HPP
 
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -16,6 +17,26 @@ namespace ShootFast::Independent::Network
     {
         RELIABLE = 0,
         UNRELIABLE = 1
+    };
+
+    enum class MessageType : uint8_t
+    {
+        C2S_GameObjectPose = 1,
+        S2C_GameObjectPose = 2,
+        S2C_AssignSelf = 3,        S2C_Spawn = 4,
+        S2C_Despawn = 5
+    };
+
+    struct Remote final { };
+
+    using ReplicationHandle = std::uint32_t;
+    inline constexpr ReplicationHandle kInvalidReplicationHandle = 0;
+
+    struct Replication
+    {
+        ReplicationHandle id{ kInvalidReplicationHandle };
+
+        bool ownedByLocal{ false };
     };
 
     template <typename T>
@@ -34,6 +55,71 @@ namespace ShootFast::Independent::Network
         CommonNetwork(CommonNetwork&&) = delete;
         CommonNetwork& operator=(const CommonNetwork&) = delete;
         CommonNetwork& operator=(CommonNetwork&&) = delete;
+
+        static MessageType PeekType(const SerializationBuffer& in)
+        {
+            if (in.empty())
+                throw std::runtime_error("Empty packet");
+
+            return static_cast<MessageType>(static_cast<uint8_t>(in[0]));
+        }
+
+        static void WriteU8(SerializationBuffer& out, const uint8_t value)
+        {
+            out.push_back(static_cast<char>(value));
+        }
+
+        static void WriteU32(SerializationBuffer& out, const uint32_t value)
+        {
+            char b[4];
+
+            std::memcpy(b, &value, 4);
+
+            out.append(b, 4);
+        }
+
+        static void WriteF32(SerializationBuffer& out, const float value)
+        {
+            char b[4];
+
+            std::memcpy(b, &value, 4);
+
+            out.append(b, 4);
+        }
+
+        static uint8_t ReadU8(const SerializationBuffer& in, size_t& offset)
+        {
+            if (offset + 1 > in.size())
+                throw std::runtime_error("read u8");
+
+            return static_cast<uint8_t>(in[offset++]);
+        }
+
+        static uint32_t ReadU32(const SerializationBuffer& in, size_t& offset)
+        {
+            if (offset + 4 > in.size())
+                throw std::runtime_error("read u32");
+
+            uint32_t v;
+
+            std::memcpy(&v, in.data() + offset, 4);
+            offset += 4;
+
+            return v;
+        }
+
+        static float ReadF32(const SerializationBuffer& in, size_t& offset)
+        {
+            if (offset + 4 > in.size())
+                throw std::runtime_error("read f32");
+
+            float v;
+
+            std::memcpy(&v, in.data() + offset, 4);
+            offset += 4;
+
+            return v;
+        }
 
         template <Serializable... T>
         static void SerializeInto(SerializationBuffer& bufferOut, T&&... args)

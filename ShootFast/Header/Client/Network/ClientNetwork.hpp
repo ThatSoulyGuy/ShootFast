@@ -35,13 +35,13 @@ namespace ShootFast::Client::Network
 
         void Poll(int timeoutMilliseconds);
 
-        void Send(const Independent::Network::SerializationBuffer& buffer, Independent::Network::PacketReliability reliability, uint8_t channel = 0) const;
+        void Send(const Independent::Network::SerializationBuffer& buffer, Independent::Network::MessageType type, Independent::Network::PacketReliability reliability, uint8_t channel = 0) const;
 
         static ClientNetwork& GetInstance();
 
         std::vector<std::function<void()>> OnConnected;
         std::vector<std::function<void()>> OnDisconnected;
-        std::vector<std::function<void(const Independent::Network::SerializationBuffer&)>> OnPacketReceived;
+        std::vector<std::function<void(Independent::Network::MessageType, const Independent::Network::SerializationBuffer&)>> OnPacketReceived;
         std::vector<std::function<void()>> OnTimeout;
 
     private:

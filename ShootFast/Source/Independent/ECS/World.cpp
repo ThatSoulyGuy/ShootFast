@@ -1,4 +1,7 @@
 #include "Independent/ECS/World.hpp"
+
+#include <ranges>
+
 #include "Independent/ECS/GameObject.hpp"
 #include "Independent/ECS/GameObjectAllocator.hpp"
 
@@ -18,7 +21,7 @@ namespace ShootFast::Independent::ECS
 
     void World::DestroyGameObject(const GameObject gameObject)
     {
-        for (auto& [_, pool] : poolMap)
+        for (const auto& pool: poolMap | std::views::values)
             pool->Remove(gameObject);
 
         allocator->Destroy(gameObject);

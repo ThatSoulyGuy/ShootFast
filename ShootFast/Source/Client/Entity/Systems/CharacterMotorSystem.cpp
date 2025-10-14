@@ -4,6 +4,7 @@
 #include "Client/Entity/PlayerInput.hpp"
 #include "Independent/ECS/World.hpp"
 #include "Independent/Math/Transform.hpp"
+#include "Independent/Network/CommonNetwork.hpp"
 
 using namespace ShootFast::Independent::ECS;
 using namespace ShootFast::Independent::Math;
@@ -14,6 +15,9 @@ namespace ShootFast::Client::Entity::Systems
     {
         for (auto [gameObject, transform, player, input] : world.View<Transform, Player, PlayerInput>())
         {
+            if (world.Has<Independent::Network::Remote>(gameObject))
+                return;
+
             float speed = player.moveSpeed;
 
             if (input.run)
