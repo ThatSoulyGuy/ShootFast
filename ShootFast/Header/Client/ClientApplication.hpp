@@ -1,6 +1,11 @@
 #ifndef SHOOTFAST_CLIENT_APPLICATION_HPP
 #define SHOOTFAST_CLIENT_APPLICATION_HPP
 
+#include <cstdint>
+#include <memory>
+#include <unordered_map>
+
+#include "Client/Core/GameState.hpp"
 #include "Independent/ECS/GameObject.hpp"
 #include "Independent/ECS/World.hpp"
 #include "Independent/Network/TransformSyncSystem.hpp"
@@ -10,6 +15,21 @@
 
 namespace ShootFast::Client
 {
+    namespace Core::States
+    {
+        class ConnectingState;
+        class GameplayState;
+        class DisconnectedState;
+    }
+
+    enum class GameStage
+    {
+        None,
+        Connecting,
+        Gameplay,
+        Disconnected
+    };
+
     class ClientApplication final
     {
 
@@ -33,9 +53,14 @@ namespace ShootFast::Client
 
         static ClientApplication& GetInstance();
 
+        void SetStage(GameStage stage);
+        [[nodiscard]] GameStage GetStage() const;
+
     private:
 
         ClientApplication() = default;
+
+        void ChangeState(std::unique_ptr<Core::GameState> state);
 
         Render::MeshRegistry meshRegistry;
         Render::ShaderRegistry shaderRegistry;
@@ -59,8 +84,22 @@ namespace ShootFast::Client
         void BuildTestResources();
         void CreateTestEntity();
 
+        void UpdateConnecting(float deltaSeconds);
+        void RenderConnecting();
+        void UpdateGameplay(float deltaSeconds);
+        void RenderGameplay();
+        void UpdateDisconnected(float deltaSeconds);
+        void RenderDisconnected();
+
         float deltaSeconds{ 1.0f / 60.0f };
         uint64_t frameIndex{ 0 };
+
+        std::unique_ptr<Core::GameState> currentState{};
+        GameStage currentStage{ GameStage::None };
+
+        friend class Core::States::ConnectingState;
+        friend class Core::States::GameplayState;
+        friend class Core::States::DisconnectedState;
 
     };
 }

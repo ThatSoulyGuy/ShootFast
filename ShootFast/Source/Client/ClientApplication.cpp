@@ -1,6 +1,9 @@
 #include "Client/ClientApplication.hpp"
+
 #include <iostream>
 #include <print>
+
+#include "Client/Core/GameStates.hpp"
 #include "Client/Core/InputManager.hpp"
 #include "Client/Core/Window.hpp"
 #include "Client/Entity/PlayerFactory.hpp"
@@ -8,12 +11,12 @@
 #include "Client/Entity/Systems/CharacterMotorSystem.hpp"
 #include "Client/Entity/Systems/PlayerInputSystem.hpp"
 #include "Client/Network/ClientNetwork.hpp"
+#include "Client/Render/DefaultRenderSystem.hpp"
 #include "Client/Render/Handles.hpp"
 #include "Client/Render/Material.hpp"
 #include "Client/Render/Mesh.hpp"
 #include "Client/Render/RenderComponents.hpp"
 #include "Client/Render/RenderMesh.hpp"
-#include "Client/Render/DefaultRenderSystem.hpp"
 #include "Client/Render/Shader.hpp"
 #include "Client/Render/Texture2d.hpp"
 #include "Client/Render/Vertices/VertexDefault.hpp"
@@ -39,6 +42,8 @@ namespace ShootFast::Client
 
     ClientApplication::~ClientApplication()
     {
+        currentState.reset();
+
         ClientNetwork::GetInstance().Disconnect();
 
         RenderComponents<Material>::Destroy(renderContext, testMaterial);
@@ -53,19 +58,22 @@ namespace ShootFast::Client
 
         InputManager::GetInstance().Initialize();
 
-        ClientNetwork::GetInstance().OnConnected.emplace_back([]
+        ClientNetwork::GetInstance().OnConnected.emplace_back([this]
         {
             std::print(std::cout, "Successfully connected to the server.\n");
+            SetStage(GameStage::Gameplay);
         });
 
-        ClientNetwork::GetInstance().OnTimeout.emplace_back([]
+        ClientNetwork::GetInstance().OnTimeout.emplace_back([this]
         {
             std::print(std::cout, "Server timed out!\n");
+            SetStage(GameStage::Disconnected);
         });
 
-        ClientNetwork::GetInstance().OnDisconnected.emplace_back([]
+        ClientNetwork::GetInstance().OnDisconnected.emplace_back([this]
         {
             std::print(std::cout, "Successfully disconnected from server.\n");
+            SetStage(GameStage::Disconnected);
         });
 
         ClientNetwork::GetInstance().OnPacketReceived.emplace_back([this](const MessageType type, const SerializationBuffer& payload)
@@ -136,6 +144,8 @@ namespace ShootFast::Client
         });
 
         ClientNetwork::GetInstance().Connect("127.0.0.1", CONNECTION_PORT);
+
+        SetStage(GameStage::Connecting);
     }
 
     void ClientApplication::Initialize()
@@ -159,30 +169,59 @@ namespace ShootFast::Client
 
     void ClientApplication::Update()
     {
-        ClientNetwork::GetInstance().Poll(1);
-
-        PlayerInputSystem::Run(world);
-
-        const CharacterMotorSystem motorSystem(1.0f / 60.0f);
-        motorSystem.Run(world);
-
-        CameraFollowSystem::Run(world);
-        TransformSystem::Run(world);
-
-        transformSynchronizationSystem.Run(world, 1.0f / 60.0f);
-
-        InputManager::GetInstance().Update();
-
-        frameIndex += 1;
+        if (currentState)
+            currentState->Update(*this, deltaSeconds);
     }
 
     void ClientApplication::Render()
     {
-        Window::Clear();
+        if (currentState)
+            currentState->Render(*this);
+    }
 
-        DefaultRenderSystem{ renderContext }.Run(world);
+    ClientApplication& ClientApplication::GetInstance()
+    {
+        static ClientApplication instance;
 
-        Window::GetInstance().Present();
+        return instance;
+    }
+
+    void ClientApplication::SetStage(const GameStage stage)
+    {
+        if (currentStage == stage)
+            return;
+
+        currentStage = stage;
+
+        switch (currentStage)
+        {
+            case GameStage::Connecting:
+                ChangeState(std::make_unique<Core::States::ConnectingState>());
+                break;
+            case GameStage::Gameplay:
+                ChangeState(std::make_unique<Core::States::GameplayState>());
+                break;
+            case GameStage::Disconnected:
+                ChangeState(std::make_unique<Core::States::DisconnectedState>());
+                break;
+            case GameStage::None:
+            default:
+                ChangeState(nullptr);
+                break;
+        }
+    }
+
+    GameStage ClientApplication::GetStage() const
+    {
+        return currentStage;
+    }
+
+    void ClientApplication::ChangeState(std::unique_ptr<Core::GameState> state)
+    {
+        currentState = std::move(state);
+
+        if (currentState)
+            currentState->Initialize(*this);
     }
 
     void ClientApplication::BuildTestResources()
@@ -216,24 +255,54 @@ namespace ShootFast::Client
         world.Add<RenderMesh<VertexDefault>>(testEntity, RenderMesh<VertexDefault>{ testMesh, testMaterial });
     }
 
-    ClientApplication& ClientApplication::GetInstance()
+    void ClientApplication::UpdateConnecting(float)
     {
-        static ClientApplication instance;
-
-        return instance;
-    }
-}
-
-int main(int, char**)
-{
-    ShootFast::Client::ClientApplication::GetInstance().Preinitialize();
-    ShootFast::Client::ClientApplication::GetInstance().Initialize();
-
-    while (ShootFast::Client::ClientApplication::IsRunning())
-    {
-        ShootFast::Client::ClientApplication::GetInstance().Update();
-        ShootFast::Client::ClientApplication::GetInstance().Render();
+        ClientNetwork::GetInstance().Poll(1);
+        InputManager::GetInstance().Update();
     }
 
-    return 0;
+    void ClientApplication::RenderConnecting()
+    {
+        Window::Clear();
+        Window::GetInstance().Present();
+    }
+
+    void ClientApplication::UpdateGameplay(float delta)
+    {
+        ClientNetwork::GetInstance().Poll(1);
+
+        PlayerInputSystem::Run(world);
+
+        const CharacterMotorSystem motorSystem(delta);
+        motorSystem.Run(world);
+
+        CameraFollowSystem::Run(world);
+        TransformSystem::Run(world);
+
+        transformSynchronizationSystem.Run(world, delta);
+
+        InputManager::GetInstance().Update();
+
+        frameIndex += 1;
+    }
+
+    void ClientApplication::RenderGameplay()
+    {
+        Window::Clear();
+
+        DefaultRenderSystem{ renderContext }.Run(world);
+
+        Window::GetInstance().Present();
+    }
+
+    void ClientApplication::UpdateDisconnected(float)
+    {
+        InputManager::GetInstance().Update();
+    }
+
+    void ClientApplication::RenderDisconnected()
+    {
+        Window::Clear();
+        Window::GetInstance().Present();
+    }
 }
