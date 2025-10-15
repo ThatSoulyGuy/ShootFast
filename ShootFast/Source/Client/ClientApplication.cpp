@@ -122,7 +122,7 @@ namespace ShootFast::Client
                     gameObject = iterator->second;
                 else
                 {
-                    auto [remoteHandle, cameraHandle] = PlayerFactory::CreateLocalPlayer(world, true, message.position);
+                    auto [remoteHandle, cameraHandle] = PlayerFactory::CreateLocalPlayer(renderContext, world, true, message.position);
                     gameObject = remoteHandle;
 
                     world.Add<Replication>(gameObject, Replication{ .id = message.handle, .ownedByLocal = false });
@@ -143,7 +143,7 @@ namespace ShootFast::Client
         BuildTestResources();
         CreateTestEntity();
 
-        auto [playerHandle, cameraHandle] = PlayerFactory::CreateLocalPlayer(world, false, { 0.0f, 0.0f, 0.0f });
+        auto [playerHandle, cameraHandle] = PlayerFactory::CreateLocalPlayer(renderContext, world, false, { 0.0f, 0.0f, 0.0f });
 
         renderContext.cameraHandle = cameraHandle;
 

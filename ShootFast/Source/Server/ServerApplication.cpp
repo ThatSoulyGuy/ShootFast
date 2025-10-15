@@ -155,13 +155,6 @@ namespace ShootFast::Server
         ServerNetwork::GetInstance().Poll(1);
 
         TransformSystem::Run(world);
-
-        for (const auto& player : playerByNetId | std::views::values)
-        {
-            const auto& playerPosition = world.Get<Transform>(player).position;
-
-            std::cout << "Player " << player << "'s position: { " << playerPosition.x << ", " << playerPosition.y << ", " << playerPosition.z << " }\n";
-        }
     }
 
     ServerApplication& ServerApplication::GetInstance()
