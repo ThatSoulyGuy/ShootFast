@@ -96,12 +96,24 @@ namespace ShootFast::Independent::Network
 
         void Serialize(SerializationBuffer& out) const
         {
-            /* write handle, pos */
+            out.clear();
+
+            CommonNetwork::WriteU32(out, handle);
+
+            CommonNetwork::WriteF32(out, position.x);
+            CommonNetwork::WriteF32(out, position.y);
+            CommonNetwork::WriteF32(out, position.z);
         }
 
         void Deserialize(const SerializationBuffer& in)
         {
-            /* read  handle, pos */
+            size_t offset = 0;
+
+            handle = CommonNetwork::ReadU32(in, offset);
+
+            position.x = CommonNetwork::ReadF32(in, offset);
+            position.y = CommonNetwork::ReadF32(in, offset);
+            position.z = CommonNetwork::ReadF32(in, offset);
         }
     };
 
@@ -112,12 +124,24 @@ namespace ShootFast::Independent::Network
 
         void Serialize(SerializationBuffer& out) const
         {
-            /* write handle, pos */
+            out.clear();
+
+            CommonNetwork::WriteU32(out, handle);
+
+            CommonNetwork::WriteF32(out, position.x);
+            CommonNetwork::WriteF32(out, position.y);
+            CommonNetwork::WriteF32(out, position.z);
         }
 
         void Deserialize(const SerializationBuffer& in)
         {
-            /* read  handle, pos */
+            size_t offset = 0;
+
+            handle = CommonNetwork::ReadU32(in, offset);
+
+            position.x = CommonNetwork::ReadF32(in, offset);
+            position.y = CommonNetwork::ReadF32(in, offset);
+            position.z = CommonNetwork::ReadF32(in, offset);
         }
     };
 
@@ -127,12 +151,16 @@ namespace ShootFast::Independent::Network
 
         void Serialize(SerializationBuffer& out) const
         {
-            /* write handle, pos */
+            out.clear();
+
+            CommonNetwork::WriteU32(out, handle);
         }
 
         void Deserialize(const SerializationBuffer& in)
         {
-            /* read  handle, pos */
+            size_t offset = 0;
+
+            handle = CommonNetwork::ReadU32(in, offset);
         }
     };
 }
