@@ -183,17 +183,26 @@ namespace ShootFast::Client::Core
 
         void Initialize();
 
-        bool GetKeyState(const KeyCode&, const KeyState&) const;
-        bool GetMouseState(const MouseCode&, const MouseState&) const;
+        [[nodiscard]]
+         bool GetKeyState(const KeyCode&, const KeyState&) const;
 
-        MouseMode GetMouseMode() const;
+        [[nodiscard]]
+         bool GetMouseState(const MouseCode&, const MouseState&) const;
+
+        [[nodiscard]]
+         MouseMode GetMouseMode() const;
         void SetMouseMode(const MouseMode&) const;
 
         std::string ConsumeTextInput();
 
-        glm::vec2 GetMousePosition() const;
-        glm::vec2 GetMouseDelta() const;
-        float GetScrollDelta() const;
+        [[nodiscard]]
+         glm::vec2 GetMousePosition() const;
+
+        [[nodiscard]]
+         glm::vec2 GetMouseDelta() const;
+
+        [[nodiscard]]
+         float GetScrollDelta() const;
 
         void Update();
         void Reset();

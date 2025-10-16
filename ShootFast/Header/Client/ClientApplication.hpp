@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "Client/Core/GameState.hpp"
+#include "Entity/Systems/CameraLookSystem.hpp"
 #include "Independent/ECS/GameObject.hpp"
 #include "Independent/ECS/World.hpp"
 #include "Independent/Network/TransformSyncSystem.hpp"
@@ -43,7 +44,6 @@ namespace ShootFast::Client
         ~ClientApplication();
 
         void Preinitialize();
-        void Initialize();
 
         [[nodiscard]]
         static bool IsRunning();
@@ -75,21 +75,15 @@ namespace ShootFast::Client
         Render::MeshHandle testMesh{};
         Render::MaterialHandle testMaterial{};
 
+        Entity::Systems::CameraLookSystem cameraLookSystem;
         Independent::Network::TransformSyncSystem transformSynchronizationSystem;
         Independent::ECS::GameObject testEntity{ 0 };
 
         std::unordered_map<std::uint32_t, Independent::ECS::GameObject> handleToGameObject;
-        Independent::ECS::GameObject localPlayerGO{0};
+        Independent::ECS::GameObject localPlayerHandle{0};
 
         void BuildTestResources();
         void CreateTestEntity();
-
-        void UpdateConnecting(float deltaSeconds);
-        void RenderConnecting();
-        void UpdateGameplay(float deltaSeconds);
-        void RenderGameplay();
-        void UpdateDisconnected(float deltaSeconds);
-        void RenderDisconnected();
 
         float deltaSeconds{ 1.0f / 60.0f };
         uint64_t frameIndex{ 0 };

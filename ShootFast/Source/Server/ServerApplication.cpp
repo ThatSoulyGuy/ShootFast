@@ -95,7 +95,9 @@ namespace ShootFast::Server
 
                     S2C_Despawn spawn{};
 
-                    spawn.handle = playerId;                    spawn.Serialize(buffer);
+                    spawn.handle = playerId;
+
+                    spawn.Serialize(buffer);
 
                     ServerNetwork::GetInstance().BroadcastExcluding(buffer, MessageType::S2C_Spawn, PacketReliability::RELIABLE, playerId, 0);
                 }

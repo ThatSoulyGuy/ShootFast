@@ -3,6 +3,12 @@
 
 namespace ShootFast::Client::Render
 {
+    struct LookAngles
+    {
+        float yawDegrees = 0.0f;
+        float pitchDegrees = 0.0f;
+    };
+
     class Camera final
     {
 

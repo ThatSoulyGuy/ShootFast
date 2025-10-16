@@ -152,6 +152,9 @@ namespace ShootFast::Client::Entity
 
             world.Add<Transform>(result.camera, Transform{ .position = { 0.0f, 1.7f, 0.0f } });
             world.Add<Camera>(result.camera, Camera{ .fovDegrees = 70.0f, .active = true, .offsetY = 0.0f });
+            world.Add<LookAngles>(result.camera);
+
+            world.Get<Player>(result.player).cameraHandle = result.camera;
 
             SetParent(world, result.camera, result.player);
         }

@@ -104,15 +104,15 @@ namespace ShootFast::Client
                 S2C_AssignSelf message{};
                 message.Deserialize(payload);
 
-                if (world.Has<Transform>(localPlayerGO))
-                    world.Get<Transform>(localPlayerGO).position = message.position;
+                if (world.Has<Transform>(localPlayerHandle))
+                    world.Get<Transform>(localPlayerHandle).position = message.position;
 
-                handleToGameObject[message.handle] = localPlayerGO;
+                handleToGameObject[message.handle] = localPlayerHandle;
 
-                if (world.Has<Replication>(localPlayerGO))
-                    world.Get<Replication>(localPlayerGO).id = message.handle;
+                if (world.Has<Replication>(localPlayerHandle))
+                    world.Get<Replication>(localPlayerHandle).id = message.handle;
 
-                transformSynchronizationSystem.AddObject(localPlayerGO);
+                transformSynchronizationSystem.AddObject(localPlayerHandle);
             }
         });
 
@@ -143,23 +143,22 @@ namespace ShootFast::Client
             }
         });
 
-        ClientNetwork::GetInstance().Connect("127.0.0.1", CONNECTION_PORT);
+        ClientNetwork::GetInstance().OnPacketReceived.emplace_back([this](const MessageType type, const SerializationBuffer& payload)
+        {
+            if (type == MessageType::S2C_Despawn)
+            {
+                S2C_Despawn message{};
+
+                message.Deserialize(payload);
+
+                if (const auto iterator = handleToGameObject.find(message.handle); iterator != handleToGameObject.end())
+                    world.DestroyGameObject(iterator->second);
+            }
+        });
 
         SetStage(GameStage::Connecting);
-    }
 
-    void ClientApplication::Initialize()
-    {
-        BuildTestResources();
-        CreateTestEntity();
-
-        auto [playerHandle, cameraHandle] = PlayerFactory::CreateLocalPlayer(renderContext, world, false, { 0.0f, 0.0f, 0.0f });
-
-        renderContext.cameraHandle = cameraHandle;
-
-        localPlayerGO = playerHandle;
-
-        world.Add<Replication>(playerHandle, Replication{ .id = kInvalidReplicationHandle, .ownedByLocal = true });
+        ClientNetwork::GetInstance().Connect("127.0.0.1", CONNECTION_PORT);
     }
 
     bool ClientApplication::IsRunning()
@@ -254,55 +253,17 @@ namespace ShootFast::Client
         world.Add<Transform>(testEntity, Transform{ .position = { 0.0f, 0.0f, -2.0f }, .rotation = {  }, .scale = { 1.0f, 1.0f, 1.0f } });
         world.Add<RenderMesh<VertexDefault>>(testEntity, RenderMesh<VertexDefault>{ testMesh, testMaterial });
     }
+}
 
-    void ClientApplication::UpdateConnecting(float)
+int main(int, char**)
+{
+    ShootFast::Client::ClientApplication::GetInstance().Preinitialize();
+
+    while (ShootFast::Client::ClientApplication::IsRunning())
     {
-        ClientNetwork::GetInstance().Poll(1);
-        InputManager::GetInstance().Update();
+        ShootFast::Client::ClientApplication::GetInstance().Update();
+        ShootFast::Client::ClientApplication::GetInstance().Render();
     }
 
-    void ClientApplication::RenderConnecting()
-    {
-        Window::Clear();
-        Window::GetInstance().Present();
-    }
-
-    void ClientApplication::UpdateGameplay(float delta)
-    {
-        ClientNetwork::GetInstance().Poll(1);
-
-        PlayerInputSystem::Run(world);
-
-        const CharacterMotorSystem motorSystem(delta);
-        motorSystem.Run(world);
-
-        CameraFollowSystem::Run(world);
-        TransformSystem::Run(world);
-
-        transformSynchronizationSystem.Run(world, delta);
-
-        InputManager::GetInstance().Update();
-
-        frameIndex += 1;
-    }
-
-    void ClientApplication::RenderGameplay()
-    {
-        Window::Clear();
-
-        DefaultRenderSystem{ renderContext }.Run(world);
-
-        Window::GetInstance().Present();
-    }
-
-    void ClientApplication::UpdateDisconnected(float)
-    {
-        InputManager::GetInstance().Update();
-    }
-
-    void ClientApplication::RenderDisconnected()
-    {
-        Window::Clear();
-        Window::GetInstance().Present();
-    }
+    return 0;
 }
