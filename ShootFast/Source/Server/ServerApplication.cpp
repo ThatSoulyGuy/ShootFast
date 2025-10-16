@@ -99,7 +99,7 @@ namespace ShootFast::Server
 
                     spawn.Serialize(buffer);
 
-                    ServerNetwork::GetInstance().BroadcastExcluding(buffer, MessageType::S2C_Spawn, PacketReliability::RELIABLE, playerId, 0);
+                    ServerNetwork::GetInstance().BroadcastExcluding(buffer, MessageType::S2C_Despawn, PacketReliability::RELIABLE, playerId, 0);
                 }
 
                 world.DestroyGameObject(iterator->second);

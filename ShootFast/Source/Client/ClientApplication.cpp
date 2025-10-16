@@ -152,7 +152,13 @@ namespace ShootFast::Client
                 message.Deserialize(payload);
 
                 if (const auto iterator = handleToGameObject.find(message.handle); iterator != handleToGameObject.end())
+                {
+                    transformSynchronizationSystem.RemoveObject(iterator->second);
+
                     world.DestroyGameObject(iterator->second);
+
+                    handleToGameObject.erase(iterator);
+                }
             }
         });
 
